@@ -109,6 +109,42 @@
       font-size: 16px;
     }
 
+    .observation-tabs {
+      display: flex;
+      gap: 6px;
+      padding: 9px 14px 0;
+    }
+
+    .observation-tabs button {
+      padding: 6px 16px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--green-700);
+      background: transparent;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .observation-tabs [aria-selected="true"] {
+      border-color: var(--green-700);
+      color: white;
+      background: var(--green-700);
+    }
+
+    .observation-tabs button:focus-visible,
+    .observation-panel:focus-visible {
+      outline: 2px solid var(--green-700);
+      outline-offset: 2px;
+    }
+
+    .observation-panel:not([hidden]) {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      flex-direction: column;
+    }
+
     .badge {
       padding: 6px 10px;
       border-radius: 999px;
@@ -488,30 +524,37 @@
           <h2>관찰 자료</h2>
           <span class="badge" id="photoCount">자료 0개</span>
         </div>
-        <div class="photo-body">
-          <div class="stage" id="stage">
-            <div class="empty" id="emptyState">
-              <strong>관찰할 사진이나 문서를 선택하세요</strong>
-              사진, 워드, 파워포인트, 엑셀, 텍스트 파일을 추가하거나 이곳으로 끌어다 놓을 수 있습니다.
-            </div>
-            <img id="preview" alt="선택한 식물 사진">
-            <div class="doc-preview" id="docPreview">
-              <span class="ext" id="docExt">FILE</span>
-              <strong id="docTitle"></strong>
-              <p>보내기를 누르면 이 파일이 AI에게 전달됩니다.</p>
-            </div>
-            <div class="caption">
-              <span id="photoName"></span>
-              <span id="photoPosition"></span>
-            </div>
-          </div>
-          <div class="thumbs" id="thumbs">
-            <button class="add-photo" id="addPhoto" type="button">
-              <b>+</b><span>자료 추가</span>
-            </button>
-          </div>
-          <input id="fileInput" type="file" accept="image/*,.txt,.md,.csv,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,text/plain,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple>
+        <div class="observation-tabs" id="observationTabs" role="tablist" aria-label="관찰 부위">
+          <button id="leaf-tab" type="button" role="tab" aria-selected="true" aria-controls="leaf-panel">잎</button>
+          <button id="flower-tab" type="button" role="tab" aria-selected="false" aria-controls="flower-panel" tabindex="-1">꽃</button>
         </div>
+        <div class="observation-panel" id="leaf-panel" role="tabpanel" aria-labelledby="leaf-tab" tabindex="0">
+          <div class="photo-body" id="photoBody">
+            <div class="stage" id="stage">
+              <div class="empty" id="emptyState">
+                <strong id="observationPrompt">잎 사진이나 문서를 선택하세요</strong>
+                사진, 워드, 파워포인트, 엑셀, 텍스트 파일을 추가하거나 이곳으로 끌어다 놓을 수 있습니다.
+              </div>
+              <img id="preview" alt="선택한 식물 사진">
+              <div class="doc-preview" id="docPreview">
+                <span class="ext" id="docExt">FILE</span>
+                <strong id="docTitle"></strong>
+                <p>보내기를 누르면 이 파일이 AI에게 전달됩니다.</p>
+              </div>
+              <div class="caption">
+                <span id="photoName"></span>
+                <span id="photoPosition"></span>
+              </div>
+            </div>
+            <div class="thumbs" id="thumbs">
+              <button class="add-photo" id="addPhoto" type="button">
+                <b>+</b><span>자료 추가</span>
+              </button>
+            </div>
+            <input id="fileInput" type="file" accept="image/*,.txt,.md,.csv,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,text/plain,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple>
+          </div>
+        </div>
+        <div class="observation-panel" id="flower-panel" role="tabpanel" aria-labelledby="flower-tab" tabindex="0" hidden></div>
       </section>
 
       <section class="panel" aria-label="관찰 채팅">
@@ -521,7 +564,7 @@
         </div>
         <div class="chat-body">
           <div class="messages" id="messages"></div>
-          <p class="notice">선택한 사진과 문서는 질문과 함께 AI로 전송되며, AI가 만든 파일도 답변에서 받아볼 수 있습니다.</p>
+          <p class="notice">현재 탭의 자료만 질문과 함께 AI로 전송됩니다. AI가 만든 파일은 답변에서 받아볼 수 있습니다.</p>
           <form id="chatForm">
             <textarea id="chatInput" rows="1" placeholder="관찰한 점이나 궁금한 점을 입력하세요"></textarea>
             <button id="sendButton" type="submit">보내기</button>
@@ -532,6 +575,10 @@
   </div>
 
   <script>
+    const tabList = document.getElementById("observationTabs");
+    const tabs = [...tabList.querySelectorAll("[role=tab]")];
+    const photoBody = document.getElementById("photoBody");
+    const observationPrompt = document.getElementById("observationPrompt");
     const stage = document.getElementById("stage");
     const preview = document.getElementById("preview");
     const docExt = document.getElementById("docExt");
@@ -549,8 +596,13 @@
 
     const DOCUMENT_EXTS = [".txt", ".md", ".csv", ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx"];
     const MAX_ITEMS = 10;
-    const items = [];
-    let selectedId = null;
+    const observations = tabs.map((tab) => ({
+      tab,
+      panel: document.getElementById(tab.getAttribute("aria-controls")),
+      items: [],
+      selectedId: null,
+    }));
+    let activeObservation = observations[0];
     let sending = false;
     const sessionId = getSessionId();
 
@@ -559,6 +611,38 @@
       "bot",
     );
     checkConnection();
+
+    tabs.forEach((tab, index) => {
+      tab.addEventListener("click", () => selectObservation(index));
+      tab.addEventListener("keydown", (event) => {
+        const next = {
+          ArrowLeft: (index + tabs.length - 1) % tabs.length,
+          ArrowRight: (index + 1) % tabs.length,
+          Home: 0,
+          End: tabs.length - 1,
+        }[event.key];
+        if (next === undefined) return;
+        event.preventDefault();
+        selectObservation(next);
+        tabs[next].focus();
+      });
+    });
+
+    function selectObservation(index) {
+      const observation = observations[index];
+      if (observation === activeObservation) return;
+
+      activeObservation.tab.setAttribute("aria-selected", "false");
+      activeObservation.tab.tabIndex = -1;
+      activeObservation.panel.hidden = true;
+      activeObservation = observation;
+      observation.tab.setAttribute("aria-selected", "true");
+      observation.tab.tabIndex = 0;
+      observation.panel.hidden = false;
+      observation.panel.append(photoBody);
+      observationPrompt.textContent = `${observation.tab.textContent} 사진이나 문서를 선택하세요`;
+      renderItems();
+    }
 
     document.getElementById("addPhoto").addEventListener("click", () => {
       fileInput.click();
@@ -596,6 +680,8 @@
     }
 
     function addFiles(fileList) {
+      if (sending) return;
+      const { items } = activeObservation;
       const accepted = [...fileList].filter((file) => isImageFile(file) || isDocumentFile(file));
       if (!accepted.length) return;
 
@@ -617,43 +703,38 @@
     }
 
     function selectItem(id) {
-      const item = items.find((entry) => entry.id === id);
-      if (!item) return;
-      selectedId = id;
-
-      if (item.kind === "image") {
-        preview.src = item.url;
-        stage.classList.add("filled");
-        stage.classList.remove("has-file");
-      } else {
-        preview.removeAttribute("src");
-        docExt.textContent = fileExt(item.name).replace(".", "").toUpperCase() || "FILE";
-        docTitle.textContent = item.name;
-        stage.classList.remove("filled");
-        stage.classList.add("has-file");
-      }
+      activeObservation.selectedId = id;
       renderItems();
     }
 
     function removeItem(id) {
+      const { items, selectedId } = activeObservation;
       const index = items.findIndex((entry) => entry.id === id);
       if (index < 0) return;
       if (items[index].url) URL.revokeObjectURL(items[index].url);
       items.splice(index, 1);
 
-      if (!items.length) {
-        selectedId = null;
-        preview.removeAttribute("src");
-        stage.classList.remove("filled", "has-file");
-        renderItems();
-      } else if (selectedId === id) {
-        selectItem(items[Math.min(index, items.length - 1)].id);
-      } else {
-        renderItems();
+      if (selectedId === id) {
+        activeObservation.selectedId = items[Math.min(index, items.length - 1)]?.id ?? null;
       }
+      renderItems();
     }
 
     function renderItems() {
+      const { items, selectedId } = activeObservation;
+      const selected = items.find((item) => item.id === selectedId);
+      stage.classList.toggle("filled", selected?.kind === "image");
+      stage.classList.toggle("has-file", selected?.kind === "document");
+      if (selected?.kind === "image") {
+        preview.src = selected.url;
+      } else {
+        preview.removeAttribute("src");
+      }
+      if (selected?.kind === "document") {
+        docExt.textContent = fileExt(selected.name).slice(1).toUpperCase() || "FILE";
+        docTitle.textContent = selected.name;
+      }
+
       thumbs.querySelectorAll(".thumb").forEach((item) => item.remove());
       photoCount.textContent = `자료 ${items.length}개`;
 
@@ -700,7 +781,6 @@
         thumbs.appendChild(button);
       }
 
-      const selected = items.find((item) => item.id === selectedId);
       photoName.textContent = selected?.name || "";
       photoPosition.textContent = selected
         ? `${items.indexOf(selected) + 1} / ${items.length}`
@@ -709,6 +789,7 @@
 
     chatForm.addEventListener("submit", async (event) => {
       event.preventDefault();
+      const items = activeObservation.items.slice();
       const message = chatInput.value.trim();
       if (sending || (!message && !items.length)) return;
 
